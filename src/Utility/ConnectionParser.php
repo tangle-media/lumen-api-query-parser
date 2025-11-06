@@ -3,16 +3,7 @@
 namespace LumenApiQueryParser\Utility;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Http\Request;
-use LumenApiQueryParser\Params\Connection;
-use LumenApiQueryParser\Params\Filter;
-use LumenApiQueryParser\Params\Pagination;
-use LumenApiQueryParser\Params\RequestParams;
-use LumenApiQueryParser\Params\RequestParamsInterface;
-use LumenApiQueryParser\Params\Sort;
-use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class ConnectionParser
 {
@@ -21,12 +12,15 @@ class ConnectionParser
     protected $value;
     protected $connections;
 
+    protected $is_attribute;
+
     protected $errors = [];
 
-    public function __construct(Builder $query, $value)
+    public function __construct(Builder $query, $value, bool $is_attribute = false)
     {
         $this->setQuery($query);
         $this->setValue($value);
+        $this->is_attribute = $is_attribute;
     }
 
     /**
@@ -66,7 +60,7 @@ class ConnectionParser
      */
     public function getConnections()
     {
-        if($this->connections === null) {
+        if ($this->connections === null) {
             $this->setConnections($this->parseConnections());
         }
         return $this->connections;
@@ -84,42 +78,70 @@ class ConnectionParser
 
     public function getConnectionString()
     {
-        if(!$this->hasConnections()) {
+        if (!$this->hasConnections()) {
             return null;
         }
         return self::connectionsToString($this->getConnections());
     }
 
-    private function parseConnections()
+    /**
+     * This function just returns the formatted relationship string without the attribute suffix.
+     *  - not able to verify polymorphic relationships in lumen with the utilties in place
+     * @return  array
+     */
+    private function parseConnections(): array
+    {
+        $context = $this;
+        $value = $this->getValue();
+
+        $parts = null;
+        if (strpos($value, '.') !== false) {
+            $parts = (explode('.', $value) ?: []);
+        } else {
+            $parts = [$value];
+        }
+        $parts = array_map(function ($v) use ($context) {
+            return $context::snakeCaseToCamelCase($v);
+        }, $parts);
+
+        return
+            $this->is_attribute ?
+            [implode('.', array_slice($parts, 0, count($parts) - 1))] :
+            [implode('.', $parts)];
+    }
+
+
+    private function parseConnections___OLD()
     {
         $context = $this;
         $value = $this->getValue();
         $model = $this->getQuery()->getModel();
         $connections = [];
         $parts = null;
-        if(strpos($value, '.') !== false) {
+        if (strpos($value, '.') !== false) {
             $parts = (explode('.', $value) ?: []);
         } else {
             $parts = [$value];
         }
-        $parts = array_map(function($v) use ($context) {
+        $parts = array_map(function ($v) use ($context) {
             return $context::snakeCaseToCamelCase($v);
         }, $parts);
         $temp = $model;
-        foreach($parts as $index => $connection) {
-            if(!method_exists($temp, $connection)) {
-                if(count($parts) == (int)$index+1) {
+        foreach ($parts as $index => $connection) {
+            if (!method_exists($temp, $connection)) {
+                if (count($parts) == (int)$index + 1) {
                     break;
                 }
                 $this->errors[] = 'Method does not exist: ' . $temp . '::' . $connection . '()';
                 return [];
             }
             $relation = $temp->$connection();
-            if($relation instanceof Relation) {
+            if ($relation instanceof Relation) {
                 $temp = $relation->getModel();
                 $connections[] = $connection;
             }
         }
+
         return $connections;
     }
 
@@ -134,18 +156,18 @@ class ConnectionParser
     public function hasConnections()
     {
         $connections = $this->getConnections();
-        if($connections && count($connections)) {
+        if ($connections && count($connections)) {
             return true;
         }
         return false;
     }
 
-    public function toArray() {
+    public function toArray()
+    {
         return [
             'value' => $this->getValue(),
             'connections' => $this->getConnections(),
             'errors' => $this->errors,
         ];
     }
-
 }

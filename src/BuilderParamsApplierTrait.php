@@ -54,7 +54,7 @@ trait BuilderParamsApplierTrait
         $connection_sorts = [];
         if ($params->hasSort()) {
             foreach ($params->getSorts() as $sort) {
-                $parser = new ConnectionParser($query, $sort->getField());
+                $parser = new ConnectionParser($query, $sort->getField(), true);
                 if ($parser->hasConnections()) {
                     $connectionName = $parser->getConnectionString();
                     if (!isset($connection_sorts[$connectionName])) {
@@ -74,7 +74,7 @@ trait BuilderParamsApplierTrait
         if ($params->hasConnection()) {
             foreach ($params->getConnections() as $connection) {
                 $connectionName = $connection->getName();
-                $parser = new ConnectionParser($query, $connectionName);
+                $parser = new ConnectionParser($query, $connectionName, false);
                 $connectionName = $parser->getConnectionString();
                 $with[] = $connectionName;
                 /**
@@ -93,7 +93,7 @@ trait BuilderParamsApplierTrait
         $where_has_connections = array_unique(
             array_merge(
                 ($connection_and_filters ? array_keys($connection_and_filters) : []),
-                []//($connection_sorts ? array_keys($connection_sorts) : [])
+                [] //($connection_sorts ? array_keys($connection_sorts) : [])
             )
         );
 
@@ -150,7 +150,7 @@ trait BuilderParamsApplierTrait
         $or_where_has_connections = array_diff(array_unique(
             array_merge(
                 ($connection_or_filters ? array_keys($connection_or_filters) : []),
-                []//($connection_sorts ? array_keys($connection_sorts) : [])
+                [] //($connection_sorts ? array_keys($connection_sorts) : [])
             )
         ), $where_has_connections);
 
@@ -179,23 +179,23 @@ trait BuilderParamsApplierTrait
                                     $this->applyFilter($inner_query, $filter);
                                 });
                             }
-//                            foreach ($sorts as $sort) {
-//                                if (count($sort) == 2) {
-//
-//                                    // check if the sort is already prefixed with the table
-//                                    $table_prefix = $q->getModel()->getTable() . '.';
-//                                    $sort_suffix = $sort[0];
-//                                    if (substr($sort_suffix, 0, strlen($table_prefix)) !== $table_prefix) {
-//                                        $sort_suffix = $table_prefix . $sort_suffix;
-//                                    }
-//
-//                                    if ($sort[1] === 'DESC') {
-//                                        $q->orderByDesc($sort_suffix);
-//                                    } else {
-//                                        $q->orderBy($sort_suffix);
-//                                    }
-//                                }
-//                            }
+                            //                            foreach ($sorts as $sort) {
+                            //                                if (count($sort) == 2) {
+                            //
+                            //                                    // check if the sort is already prefixed with the table
+                            //                                    $table_prefix = $q->getModel()->getTable() . '.';
+                            //                                    $sort_suffix = $sort[0];
+                            //                                    if (substr($sort_suffix, 0, strlen($table_prefix)) !== $table_prefix) {
+                            //                                        $sort_suffix = $table_prefix . $sort_suffix;
+                            //                                    }
+                            //
+                            //                                    if ($sort[1] === 'DESC') {
+                            //                                        $q->orderByDesc($sort_suffix);
+                            //                                    } else {
+                            //                                        $q->orderBy($sort_suffix);
+                            //                                    }
+                            //                                }
+                            //                            }
                         });
                     }
                 }
@@ -246,9 +246,9 @@ trait BuilderParamsApplierTrait
 
         //:: Apply Connection Includes
         if (count($with)) {
-            foreach($connection_sorts as $connectionName => $sorts) {
+            foreach ($connection_sorts as $connectionName => $sorts) {
                 unset($with[array_search($connectionName, $with)]);
-                $with[$connectionName] = function($q) use ($sorts) {
+                $with[$connectionName] = function ($q) use ($sorts) {
                     foreach ($sorts as $sort) {
                         if (count($sort) == 2) {
 
@@ -287,7 +287,6 @@ trait BuilderParamsApplierTrait
         //print_r($query->toSql());
 
         return $paginator;
-
     }
 
     protected function applyFilter(Builder $query, Filter $filter): void
@@ -360,7 +359,9 @@ trait BuilderParamsApplierTrait
             $query->has($field);
         } else {
             call_user_func_array([$query, $method], [
-                $field, $clauseOperator, $value
+                $field,
+                $clauseOperator,
+                $value
             ]);
         }
     }
@@ -369,5 +370,4 @@ trait BuilderParamsApplierTrait
     {
         $query->orderBy($sort->getField(), $sort->getDirection());
     }
-
 }
