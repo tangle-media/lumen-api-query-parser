@@ -1,5 +1,5 @@
 {
-    "name": "kolbytangle/lumen-api-query-parser",
+    "name": "tangle-media/lumen-api-query-parser",
     "description": "A query parser for REST-APIs based on laravel's lumen framework",
     "keywords": ["lumen", "query parser", "api"],
     "homepage": "https://github.com/ngabor84/lumen-api-query-parser",
