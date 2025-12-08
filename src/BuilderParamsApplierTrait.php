@@ -166,7 +166,7 @@ trait BuilderParamsApplierTrait
             // iterate over connection sorts an match to a handler
             foreach ($connection_sorts as $connectionName => $sorts) {
                 // check for a handler & call found handler
-                if (array_key_exists($connectionName, $connection_sorts)) {
+                if (isset($sort_callbacks[$connectionName]) && is_callable($sort_callbacks[$connectionName])) {
                     $handler = $sort_callbacks[$connectionName];
                     $handler($query, $sorts);
                 }
