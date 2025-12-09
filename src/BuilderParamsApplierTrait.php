@@ -162,7 +162,7 @@ trait BuilderParamsApplierTrait
         }
 
         // handle sorts that require a connection/join
-        if (count($connection_sorts) && count($sort_callbacks)) {
+        if (is_array($connection_sorts) && count($connection_sorts) && is_array($sort_callbacks) && count($sort_callbacks)) {
             // iterate over connection sorts an match to a handler
             foreach ($connection_sorts as $connectionName => $sorts) {
                 // check for a handler & call found handler
