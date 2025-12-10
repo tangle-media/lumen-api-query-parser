@@ -21,11 +21,17 @@ class FieldComponentProvider
         $this->setQuery($query);
         $this->setFilter($filter);
         $this->setField($filter->getField());
+
+        // if the field does not have a delimeter: do not check for connection unless the operator is a 'fieldless' type ('has'). 
+        if (strstr($filter->getField(), '.') === false && $filter->getOperator() !== 'has') {
+            return;
+        }
+
         $parser = new ConnectionParser($query, $this->getField());
-        if($parser->hasConnections()) {
+        if ($parser->hasConnections()) {
             $this->setConnections($parser->getConnections());
             $parts = (explode('.', $this->getField()) ?: []);
-            if(count($parts) > 1) {
+            if (count($parts) > 1) {
                 $this->setField(array_pop($parts));
             } else {
                 $this->setField(null);
@@ -99,7 +105,7 @@ class FieldComponentProvider
 
     public function getConnectionString()
     {
-        if(!$this->hasConnections()) {
+        if (!$this->hasConnections()) {
             return null;
         }
         return ConnectionParser::connectionsToString($this->getConnections());
@@ -108,13 +114,14 @@ class FieldComponentProvider
     public function hasConnections()
     {
         $connections = $this->getConnections();
-        if($connections && count($connections)) {
+        if ($connections && count($connections)) {
             return true;
         }
         return false;
     }
 
-    public function toArray() {
+    public function toArray()
+    {
         return [
             'filter_field' => $this->getFilter()->getField(),
             'field' => $this->getField(),
@@ -122,5 +129,4 @@ class FieldComponentProvider
             'errors' => $this->errors,
         ];
     }
-
 }
